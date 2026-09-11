@@ -1,139 +1,169 @@
 # Shopify Product Taxonomy Classifier
 
-A working Django prototype that imports large product catalogues, predicts a Shopify taxonomy category, extracts category attributes, calculates confidence, offers alternative categories, and routes uncertain results to a manual-review queue.
+This is a Django-based prototype for classifying product catalogues into suitable Shopify Product Taxonomy categories. It was developed using the supplied furniture product catalogue as part of a Python developer assignment.
 
-The supplied `Product List.xlsx` contains 4,999 products and 48 columns. The importer maps its fields directly, including 20 possible image URLs. It also accepts simpler CSV or Excel files with common names such as `sku`, `title`, `description`, `product_type`, `brand`, `color`, and `material`.
+The application reads product information from an Excel or CSV file, predicts a suitable category, extracts available attributes and marks uncertain results for manual review.
 
-## What the prototype demonstrates
+## Main features
 
-- Excel and CSV catalogue import
-- Resilient per-product classification
-- Confidence and two alternative suggestions
-- Attribute extraction for colour, material, assembly requirement, and category-specific values
-- Missing-description and missing-image support
-- Database-backed batch processing that resumes without reprocessing completed rows
-- Searchable result interface and manual approval/correction
-- Progress JSON API and results API
-- CSV export
-- SQLite for zero-configuration evaluation and MariaDB configuration for production
-- Automated tests
+- Upload product catalogues in Excel or CSV format
+- Process products in batches
+- Predict a suitable taxonomy category
+- Display a confidence score
+- Suggest alternative categories
+- Detect available attributes such as colour and material
+- Continue when descriptions, attributes or images are missing
+- Mark uncertain predictions for manual review
+- Allow a reviewer to correct and approve a category
+- Track batch progress
+- Resume processing without repeating completed products
+- Export the final results as a CSV file
 
-## Quick start on Windows
+## Technologies used
 
-Open PowerShell in the project folder:
+- Python
+- Django
+- HTML, CSS and JavaScript
+- SQLite
+- Pandas and openpyxl
+- Scikit-learn
+
+SQLite is used because it makes the prototype easy to install and demonstrate locally. A production version could use MariaDB or PostgreSQL and a distributed background-task system.
+
+## How classification works
+
+The classifier combines the available product information, including the product title, description, category, subcategory, brand, colour, material, bullet points and set contents.
+
+It compares this information with taxonomy category paths and keywords using TF-IDF, cosine similarity and keyword matching. The title and product type receive more importance because they usually give the clearest indication of what the product is.
+
+The application saves the best category, its confidence score and two alternatives. A result is sent for manual review when its confidence is low or when the two best categories receive very similar scores.
+
+## Project structure
+
+```text
+shopify-taxonomy-classifier/
+├── classifier/
+│   ├── management/        # Taxonomy and batch commands
+│   ├── migrations/        # Database migrations
+│   ├── services/          # Import, classification and batch logic
+│   ├── admin.py
+│   ├── forms.py
+│   ├── models.py
+│   ├── tests.py
+│   ├── urls.py
+│   └── views.py
+├── config/                # Django settings
+├── data/
+│   └── taxonomy_seed.json
+├── sample_data/           # Optional anonymized sample
+├── static/                # CSS
+├── templates/             # HTML templates
+├── .gitignore
+├── manage.py
+├── README.md
+└── requirements.txt
+```
+
+## Setup on Windows
+
+Python 3.11 or a newer supported version is recommended.
+
+### 1. Create a virtual environment
+
+Open PowerShell in the folder containing `manage.py`:
 
 ```powershell
-py -m venv venv
+py -3.11 -m venv venv
 venv\Scripts\activate
+```
+
+### 2. Install the packages
+
+```powershell
 python -m pip install --upgrade pip
 pip install -r requirements.txt
+```
+
+### 3. Prepare the database
+
+```powershell
 python manage.py migrate
+```
+
+### 4. Load the taxonomy categories
+
+```powershell
 python manage.py seed_taxonomy
-python manage.py createsuperuser
+```
+
+### 5. Start the application
+
+```powershell
 python manage.py runserver
 ```
 
-Open `http://127.0.0.1:8000/`, upload `sample_data/Product List.xlsx`, and select the immediate-processing option for a quick demonstration.
+Open:
 
-To classify the entire catalogue, open a second PowerShell window, activate the same environment, and run:
+```text
+http://127.0.0.1:8000/
+```
+
+## Using the application
+
+1. Open the dashboard and select **Upload catalogue**.
+2. Choose an `.xlsx` or `.csv` product file.
+3. Select the immediate-processing option to classify the first 250 products during a quick demonstration.
+4. Open the batch page to view predictions, confidence scores and progress.
+5. Use **Needs review** to find uncertain classifications.
+6. Open a product to change or approve its category.
+7. Select **Export CSV** to download the final results.
+
+The supplied company catalogue is not included in this public repository. It can be uploaded locally when demonstrating the application.
+
+## Processing the complete catalogue
+
+The immediate-processing option is limited to 250 products so that the browser request does not stay open for too long.
+
+To process the complete catalogue, keep the development server running and open a second terminal. Activate the same environment and run:
 
 ```powershell
+venv\Scripts\activate
 python manage.py process_batches --watch
 ```
 
-The worker command processes pending batches and can be stopped or restarted safely.
+The worker processes pending products and saves each result separately. If it is stopped, running the same command again continues with the remaining products.
 
+## Tests
 
-In a second terminal:
+Run the tests with:
 
-```bash
-source venv/bin/activate
-python manage.py process_batches --watch
+```powershell
+python manage.py test
 ```
 
-## Application URLs
+The tests cover basic classification, missing descriptions, resumable processing and batch-progress calculation.
+
+## Important URLs
 
 | URL | Purpose |
 | --- | --- |
 | `/` | Batch dashboard |
-| `/upload/` | Upload CSV or Excel catalogue |
-| `/batches/<id>/` | Results and progress |
-| `/batches/<id>/progress/` | Progress JSON API |
-| `/batches/<id>/api/products/` | Classification JSON API |
-| `/batches/<id>/export/` | Export results as CSV |
-| `/products/<id>/review/` | Approve or correct a result |
-| `/admin/` | Django administration |
+| `/upload/` | Catalogue upload |
+| `/batches/<id>/` | Classification results |
+| `/batches/<id>/progress/` | Batch-progress API |
+| `/batches/<id>/api/products/` | Product-results API |
+| `/batches/<id>/export/` | CSV export |
+| `/products/<id>/review/` | Manual review |
 
-## Classification design
+## Current limitations
 
-The prototype uses a hybrid, explainable retrieval classifier:
+- The included taxonomy is a furniture-focused subset prepared for the supplied catalogue. It is not the complete official Shopify taxonomy.
+- Product images are displayed during review but are not currently used as classification inputs.
+- Confidence is a ranking score used to identify uncertain products, not a calibrated probability.
+- The prototype uses a local database and a single background worker.
 
-1. It combines title, description, product type, brand, colour, material, bullets, and set contents.
-2. It compares the combined text against taxonomy paths and category keywords with TF-IDF word and bigram vectors.
-3. It adds a bounded keyword-overlap signal.
-4. It ranks all candidate categories and retains the top three.
-5. It adjusts confidence using the score margin and available evidence.
-6. It flags low-confidence or closely tied results for review.
-7. It extracts only supported attributes found in the product evidence.
+For a production version, I would import the complete official taxonomy, add controlled image classification, test confidence using verified product labels and use a production database with managed background workers.
 
-The included taxonomy JSON is a furniture-focused seed covering the supplied catalogue. It intentionally has clear local identifiers so the prototype does not misrepresent them as Shopify's official stable IDs. In production, replace this seed with a current official Shopify taxonomy export while keeping the same model fields.
+## Dataset privacy
 
-This approach works without paid API keys, is fast enough for an online test, and gives deterministic results. A production enhancement could replace or blend TF-IDF with a sentence-transformer embedding model and CLIP image embeddings after calibration on labelled validation products.
-
-## Missing and broken data
-
-- Missing descriptions: classification continues with title, product type, brand, and other available fields; confidence is reduced.
-- Missing images: no failure occurs because text classification is the baseline.
-- Broken image URLs: the browser shows an unavailable-image state; classification is unaffected.
-- Empty subcategory: the parent product category and remaining text are used.
-- Per-product errors: the row is marked failed and the rest of the batch continues.
-- Interrupted jobs: records stuck in `processing` are reset to `pending`; completed products remain untouched.
-
-## Batch scaling
-
-The catalogue is inserted with `bulk_create(..., batch_size=500)`. The worker claims pending products in chunks and writes progress after each row. The schema has indexes for batch/status and batch/review queries.
-
-For multiple production workers, MariaDB/PostgreSQL should use `SELECT ... FOR UPDATE SKIP LOCKED`; Celery with Redis or RabbitMQ can call the same `process_batch` service. Taxonomy vectors should be cached and product texts vectorized in chunks. External AI calls should be batched, rate-limited, retried with exponential backoff, and protected by idempotency keys.
-
-Ten thousand sequential two-second API requests take about 5 hours 33 minutes. Ten workers reduce the theoretical request time to about 33 minutes, subject to provider limits. Batching 20 products per request would reduce the call count from 10,000 to 500.
-
-## MariaDB
-
-Start the included database service:
-
-```bash
-docker compose up -d
-```
-
-## Tests
-
-```bash
-python manage.py test
-```
-
-The tests cover classification, missing descriptions, resumable processing, and progress reporting.
-
-## Optional taxonomy web importer
-
-Beautiful Soup can help parse a static taxonomy webpage or downloaded HTML. Selenium should be used only if the source renders taxonomy data exclusively through JavaScript. Neither is required for normal catalogue classification, and scraping must comply with the source's terms and rate limits. A versioned official file or repository export is more reliable than live scraping.
-
-## Production improvements
-
-- Import the full official Shopify taxonomy and attribute definitions.
-- Cache fitted taxonomy vectors instead of fitting during each product classification.
-- Add sentence-transformer text embeddings and optional CLIP image embeddings.
-- Validate remote images in background tasks with strict timeouts, MIME checks, size limits, and SSRF protection.
-- Add authentication and reviewer roles.
-- Add Celery/Redis, multi-worker locking, monitoring, structured logs, and dead-letter handling.
-- Calibrate confidence thresholds on labelled data and report top-1/top-3 accuracy by category.
-- Add object storage, antivirus scanning, retention rules, and audit export.
-
-## Assumptions and limitations
-
-- The included taxonomy is a representative furniture subset for a working assessment prototype, not the complete official Shopify taxonomy.
-- Confidence is a ranking confidence useful for review routing, not a statistically calibrated probability.
-- Images are displayed but are not downloaded or analysed in the baseline. This avoids insecure arbitrary URL fetching during evaluation.
-- The immediate browser action is capped at 250 rows to avoid request timeouts. Use the worker for all 4,999 products.
-
-
-
+The original product catalogue should not be uploaded to a public repository unless permission has been provided. A small anonymized sample can be included for demonstration.
