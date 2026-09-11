@@ -164,6 +164,3 @@ The tests cover basic classification, missing descriptions, resumable processing
 
 For a production version, I would import the complete official taxonomy, add controlled image classification, test confidence using verified product labels and use a production database with managed background workers.
 
-## Dataset privacy
-
-The original product catalogue should not be uploaded to a public repository unless permission has been provided. A small anonymized sample can be included for demonstration.
