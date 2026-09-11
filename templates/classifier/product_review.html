@@ -1,0 +1,40 @@
+{% extends 'classifier/base.html' %}{% block title %}Review {{ product.external_id }}{% endblock %}{% block content %}
+<div class="page-title">
+    <p class="eyebrow">Manual review</p>
+    <h1>{{ product.title }}</h1>
+    <p>{{ product.external_id }} · {{ product.product_type }}</p>
+</div>
+<div class="review-grid">
+    <section class="panel product-card">{% if product.image_urls %}<img src="{{ product.image_urls.0 }}" alt="{{ product.title }}" onerror="this.classList.add('broken');this.alt='Image unavailable'">
+        {% endif %}
+        <h2>Product evidence</h2>
+        <dl>
+            <dt>Description</dt>
+            <dd>{{ product.description|default:'Not provided' }}</dd>
+            <dt>Material</dt>
+            <dd>{{ product.material|default:'Not provided' }}</dd>
+            <dt>Colour</dt>
+            <dd>{{ product.color|default:'Not provided' }}</dd>
+            <dt>Detected attributes</dt>
+            <dd>{{ product.detected_attributes }}</dd>
+        </dl>
+    </section>
+    <section class="panel form-panel">
+        <h2>Classification</h2>
+        <p><strong>Confidence:</strong> {{ product.confidence|floatformat:3 }}</p>
+        {% if product.alternatives %}
+        <h3>Alternatives</h3>
+        <ol>
+            {% for a in product.alternatives %}
+            <li>{{ a.category }} <small>{{ a.score|floatformat:3 }}</small></li>
+            {% endfor %}
+        </ol>
+        {% endif %}
+        <form method="post">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <button class="button" type="submit">Save review</button>
+        </form>
+    </section>
+</div>
+{% endblock %}

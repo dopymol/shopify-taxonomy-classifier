@@ -1,0 +1,24 @@
+{% extends 'classifier/base.html' %}{% block title %}Upload catalogue{% endblock %}{% block content %}
+<div class="narrow">
+    <div class="page-title">
+        <p class="eyebrow">New batch</p>
+        <h1>Upload a product catalogue</h1>
+        <p>The importer supports the supplied 48-column Excel file and common CSV field names.</p>
+    </div>
+<form method="post" enctype="multipart/form-data" class="panel form-panel">
+    {% csrf_token %}
+{% if form.non_field_errors %}
+    <div class="errorlist">{{ form.non_field_errors }}</div>
+    {% endif %}
+<label>Catalogue file{{ form.catalogue }}{{ form.catalogue.errors }}
+    <small>{{ form.catalogue.help_text }}</small>
+</label>
+<label class="check">{{ form.process_now }}
+    <span>Classify the first 250 products immediately
+        <small>{{ form.process_now.help_text }}</small>
+    </span>
+</label>
+<button class="button" type="submit">Import catalogue</button>
+</form>
+</div>
+{% endblock %}

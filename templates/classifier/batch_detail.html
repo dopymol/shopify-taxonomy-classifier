@@ -1,0 +1,42 @@
+{% extends 'classifier/base.html' %}{% block title %}Batch {{ batch.id }}{% endblock %}{% block content %}
+<div class="page-title row"><div>
+    <p class="eyebrow">Batch #{{ batch.id }}</p>
+    <h1>{{ batch.original_filename }}</h1>
+    <p id="status-text">{{ batch.get_status_display }} · {{ batch.processed_products }} of {{ batch.total_products }} processed</p></div>
+    <div class="actions"><a class="button secondary" href="{% url 'export_results' batch.id %}">Export CSV</a>
+        <form method="post" action="{% url 'process_batch_now' batch.id %}">{% csrf_token %}<button class="button" type="submit">Process next 250</button></form>
+    </div>
+</div>
+{% if batch.error_message %}<div class="message error">{{ batch.error_message }}</div>{% endif %}
+<section class="metrics">
+    <article>
+        <span>Total</span>
+        <strong>{{ batch.total_products }}</strong>
+    </article>
+    <article>
+        <span>Processed</span>
+        <strong id="processed">{{ batch.processed_products }}</strong>
+    </article>
+    <article>
+        <span>Successful</span><strong id="successful">{{ batch.successful_products }}</strong>
+    </article>
+    <article><span>Errors</span><strong id="failed">{{ batch.failed_products }}</strong>
+    </article>
+</section>
+<div class="progress large"><i id="progress-bar" style="width:{{ batch.percentage }}%"></i></div>
+<section class="panel">
+    <div class="toolbar"><form method="get"><input name="q" value="{{ query }}" placeholder="Search product or SKU"><input type="hidden" name="status" value="{{ status_filter }}"><button>Search</button></form><div class="filters"><a href="?">All</a>
+        <a href="?status=review">Needs review</a>
+        <a href="?status=approved">Approved</a>
+        <a href="?status=failed">Failed</a>
+    </div>
+    </div>
+<div class="table-wrap"><table><thead><tr><th>Product</th><th>Prediction</th><th>Confidence</th><th>Attributes</th><th>Status</th><th></th></tr></thead><tbody>
+{% for p in page %}<tr><td><strong>{{ p.title|truncatechars:52 }}</strong><small>{{ p.external_id }}</small></td><td>{% if p.predicted_category %}{{ p.predicted_category.full_path }}{% else %}<span class="muted">Not classified</span>{% endif %}</td><td>{% if p.confidence != None %}<span class="confidence {% if p.confidence >= .75 %}high{% elif p.confidence >= .55 %}medium{% else %}low{% endif %}">{{ p.confidence|floatformat:2 }}</span>{% else %}—{% endif %}</td><td><small>{{ p.detected_attributes|truncatechars:60 }}</small></td><td>{% if p.approved %}<span class="badge completed">Approved</span>{% elif p.requires_review %}<span class="badge review">Review</span>{% else %}<span class="badge {{ p.processing_status }}">{{ p.get_processing_status_display }}</span>{% endif %}</td><td><a href="{% url 'product_review' p.id %}">Review</a></td></tr>{% empty %}<tr><td colspan="6" class="empty">No products match this filter.</td></tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+    <div class="pagination">{% if page.has_previous %}<a href="?page={{ page.previous_page_number }}&status={{ status_filter }}&q={{ query }}">Previous</a>{% endif %}<span>Page {{ page.number }} of {{ page.paginator.num_pages }}</span>{% if page.has_next %}<a href="?page={{ page.next_page_number }}&status={{ status_filter }}&q={{ query }}">Next</a>{% endif %}</div></section>
+<p class="api-note">JSON endpoint: <a href="{% url 'products_api' batch.id %}">{% url 'products_api' batch.id %}</a> (first 500 records)</p>
+{% endblock %}{% block scripts %}<script>const url="{% url 'batch_progress' batch.id %}";setInterval(async()=>{const r=await fetch(url);if(!r.ok)return;const d=await r.json();document.querySelector('#progress-bar').style.width=d.percentage+'%';document.querySelector('#processed').textContent=d.processed;document.querySelector('#successful').textContent=d.successful;document.querySelector('#failed').textContent=d.failed;document.querySelector('#status-text').textContent=d.status+' · '+d.processed+' of '+d.total+' processed';},3000);</script>{% endblock %}

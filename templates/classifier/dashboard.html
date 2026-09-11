@@ -1,0 +1,54 @@
+{% extends 'classifier/base.html' %}{% block title %}Dashboard{% endblock %}{% block content %}
+<section class="hero">
+    <div><p class="eyebrow">Product intelligence</p>
+        <h1>Classification batches</h1>
+        <p>Import product catalogues, classify them against the taxonomy, and route uncertain results to human review.</p>
+    </div>
+    <a class="button" href="{% url 'upload_catalogue' %}">New classification</a>
+</section>
+<section class="panel">
+    <div class="panel-head">
+        <h2>Recent batches</h2>
+    </div>
+{% if batches %}
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>File</th>
+                        <th>Status</th>
+                        <th>Progress</th>
+                        <th>Review</th>
+                        <th>Created</th>
+                        <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for batch in batches %}
+                <tr>
+                    <td>
+                        <strong>{{ batch.original_filename }}</strong>
+                        <small>Batch #{{ batch.id }}</small>
+                    </td>
+                    <td>
+                        <span class="badge {{ batch.status }}">{{ batch.get_status_display }}</span>
+                    </td>
+                    <td>{{ batch.processed_products }} / {{ batch.total_products }}
+                        <div class="progress"><i style="width:{{ batch.percentage }}%"></i></div>
+                    </td>
+                    <td>{{ batch.review_count }}</td>
+                    <td>{{ batch.created_at|date:'d M Y H:i' }}</td>
+                    <td><a href="{% url 'batch_detail' batch.id %}">Open</a></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty">
+        <h3>No catalogues yet</h3>
+        <p>Upload the supplied Product List.xlsx to begin.</p>
+    </div>
+    {% endif %}
+</section>
+{% endblock %}

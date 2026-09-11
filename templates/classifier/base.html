@@ -1,0 +1,15 @@
+{% load static %}
+<!doctype html>
+    <html lang="en"><head><meta charset="utf-8">
+        <meta name="viewport" content="width=device-width,initial-scale=1">
+            <title>{% block title %}Taxonomy Classifier{% endblock %}</title>
+        <link rel="stylesheet" href="{% static 'css/app.css' %}"></head>
+
+<body>
+    <header><a class="brand" href="{% url 'dashboard' %}">Taxonomy Classifier</a>
+        <nav><a href="{% url 'dashboard' %}">Dashboard</a>
+            <a class="button small" href="{% url 'upload_catalogue' %}">Upload catalogue</a></nav></header>
+<main>{% for message in messages %}<div class="message {{ message.tags }}">{{ message }}</div>{% endfor %}{% block content %}{% endblock %}</main>
+<footer>Python and Django prototype for Shopify Product Taxonomy classification</footer>{% block scripts %}{% endblock %}
+</body>
+    </html>

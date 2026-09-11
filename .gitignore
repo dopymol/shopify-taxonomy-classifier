@@ -1,0 +1,25 @@
+# Virtual environment
+venv/
+.venv/
+
+# Python
+__pycache__/
+*.py[cod]
+
+# Django
+db.sqlite3
+media/
+staticfiles/
+
+# Secrets
+.env
+
+# IDE
+.idea/
+.vscode/
+
+# Testing
+.pytest_cache/
+
+# Confidential product catalogue
+sample_data/Product List.xlsx
